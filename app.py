@@ -15,14 +15,25 @@ mongo.db.products.create_index([("name", TEXT)])
 @app.route("/search", methods=["GET"])
 def search():
     # BEGIN CODE HERE
-    return ""
+    search_name = mongo.request.args.get('name')
+    result = mongo.db.products.find({"name": search_name}).sort("price")
+    return result
     # END CODE HERE
 
 
 @app.route("/add-product", methods=["POST"])
 def add_product():
     # BEGIN CODE HERE
-    return ""
+    if int(mongo.request.args.get('color')) in range(1,3) and int(mongo.request.args.get('size')) in range(1,4):
+        new_product = {}
+        new_product['id'] = mongo.request.args.get('id')
+        new_product['name'] = mongo.request.args.get('name')
+        new_product['production_year'] = int(mongo.request.args.get('production_year'))
+        new_product['price'] = int(mongo.request.args.get('price'))
+        new_product['color'] = int(mongo.request.args.get('color'))
+        new_product['size'] = int(mongo.request.args.get('size'))
+        result = mongo.db.products.replace_one(new_product, upsert=True)
+    return result
     # END CODE HERE
 
 
