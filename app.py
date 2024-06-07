@@ -1,13 +1,10 @@
 # BEGIN CODE HERE
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 from pymongo import TEXT
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
+
+
 # END CODE HERE
 
 app = Flask(__name__)
@@ -16,29 +13,62 @@ CORS(app)
 mongo = PyMongo(app)
 mongo.db.products.create_index([("name", TEXT)])
 
-
+app.run(debug=True)
 @app.route("/search", methods=["GET"])
 def search():
     # BEGIN CODE HERE
-    search_name = mongo.request.args.get('name')
-    result = mongo.db.products.find({"name": search_name}).sort("price")
-    return result
+    try:
+        # Get the value of the 'name' parameter from the request query string
+        search_name = request.args.get('name')
+        
+        # Find products with the given name and sort them by price in ascending order
+        # Assuming 'price' is a field in the documents of the 'products' collection
+        result = list(mongo.db.products.find({"name": search_name}).sort("price", 1))
+        
+    
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     # END CODE HERE
 
 
 @app.route("/add-product", methods=["POST"])
 def add_product():
     # BEGIN CODE HERE
-    if int(mongo.request.args.get('color')) in range(1,3) and int(mongo.request.args.get('size')) in range(1,4):
-        new_product = {}
-        new_product['id'] = mongo.request.args.get('id')
-        new_product['name'] = mongo.request.args.get('name')
-        new_product['production_year'] = int(mongo.request.args.get('production_year'))
-        new_product['price'] = int(mongo.request.args.get('price'))
-        new_product['color'] = int(mongo.request.args.get('color'))
-        new_product['size'] = int(mongo.request.args.get('size'))
-        result = mongo.db.products.replace_one(new_product, upsert=True)
-    return result
+    try:
+        data = request.get_json()
+        # Validate data
+        if not all(k in data for k in ("id", "name", "production_year", "price", "color", "size")):
+            return jsonify({"error": "Invalid input"}), 400
+
+        if data['color'] not in [1, 2, 3] or data['size'] not in [1, 2, 3, 4]:
+            return jsonify({"error": "Invalid color or size"}), 400
+        
+        new_product = {
+            "id": data["id"],
+            "name": data["name"],
+            "production_year": data["production_year"],
+            "price": data["price"],
+            "color": data["color"],
+            "size": data["size"]
+        }
+
+        result = mongo.db.products.replace_one(
+            {"name": data["name"]},  # Filter to find the product by name
+            new_product,  # New product data
+            upsert=True  # Insert the document if it doesn't exist
+        )
+        
+        if result.matched_count:
+            message = "Product updated"
+            status_code = 200
+        else:
+            message = "Product added"
+            status_code = 201
+        
+        return jsonify({"message": message}), status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     # END CODE HERE
 
 
