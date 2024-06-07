@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 from pymongo import TEXT
+import numpy as np
 
 
 # END CODE HERE
@@ -75,7 +76,40 @@ def add_product():
 @app.route("/content-based-filtering", methods=["POST"])
 def content_based_filtering():
     # BEGIN CODE HERE
-    return ""
+    try:
+        product_name = request.json.get("name")
+        product = mongo.db.products.find_one({"name": product_name})
+        if not product:
+            return jsonify({"error": "Product not found"}), 404
+        
+        similarity_threshold = 0.7
+        all_products = list(mongo.db.products.find())
+    
+        def extract_features(product):
+            return np.array([product["production_year"], product["price"], product["color"], product["size"]])
+
+        product_features = extract_features(product)
+        all_features = np.array([extract_features(p) for p in all_products])
+
+        def magnitude(feature_array):
+            a = 0
+            for feature in feature_array:
+                a = a + np.square(feature)
+            return np.sqrt(a)
+        
+        similar_product_names = []
+        for i, f in enumerate(all_features):
+            similarity = np.dot(product_features, f) / (magnitude(product_features) * magnitude(f))
+            if similarity >= similarity_threshold and all_products[i]["name"] != product_name:
+                similar_product_names.append(all_products[i]["name"])
+
+        return jsonify(similar_product_names)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    
+    
     # END CODE HERE
 
 
@@ -83,31 +117,34 @@ def content_based_filtering():
 def crawler():
     # BEGIN CODE HERE
     
+    try:
+        semester = request.args.get('semester')
+        url = "https://qa.auth.gr/el/x/studyguide/600000438/current"
+
+        options = Options()
+        options.headless = True
+
+        driver = webdriver.Chrome(options=options)
+        driver.get(url)
+
+        elementID = "exam" + str(semester)
+
+        exam_element = driver.find_element(By.ID, elementID)
+        tbody_element = exam_element.find_element(By.TAG_NAME, "tbody")
+
+        rows = tbody_element.find_elements(By.TAG_NAME, "tr")
+        course_titles = []
+        for row in rows:
+                course_title = row.get_attribute("coursetitle")
+                if course_title:
+                    course_titles.append(course_title)
+                
+        driver.quit()
+
+        res = {"course_titles": course_titles}
+
+        return res
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     
-    semester = semester = request.args.get('semester')
-    url = "https://qa.auth.gr/el/x/studyguide/600000438/current"
-
-    options = Options()
-    options.headless = True
-
-    driver = webdriver.Chrome(options=options)
-    driver.get(url)
-
-    elementID = "exam" + str(semester)
-
-    exam_element = driver.find_element(By.ID, elementID)
-    tbody_element = exam_element.find_element(By.TAG_NAME, "tbody")
-
-    rows = tbody_element.find_elements(By.TAG_NAME, "tr")
-    course_titles = []
-    for row in rows:
-            course_title = row.get_attribute("coursetitle")
-            if course_title:
-                course_titles.append(course_title)
-            
-    driver.quit()
-
-    res = {"course_titles": course_titles}
-
-    return res
     # END CODE HERE

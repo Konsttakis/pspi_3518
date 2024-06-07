@@ -1,10 +1,19 @@
 /* BEGIN CODE HERE */
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
 nav {
     height: 150px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 7%;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .logo {
