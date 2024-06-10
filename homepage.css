@@ -6,6 +6,13 @@ body {
     width: 100%;
 }
 
+.container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
 nav {
     height: 150px;
     display: flex;
