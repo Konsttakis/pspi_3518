@@ -19,15 +19,17 @@ app.run(debug=True)
 def search():
     # BEGIN CODE HERE
     try:
-        # Get the value of the 'name' parameter from the request query string
+       
         search_name = request.args.get('name')
-        
-        # Find products with the given name and sort them by price in ascending order
-        # Assuming 'price' is a field in the documents of the 'products' collection
-        result = list(mongo.db.products.find({"name": search_name}).sort("price", 1))
-        
+        if not search_name:
+            return jsonify({"error": "Name parameter is required"}), 400
+        results = mongo.db.products.find({"name": search_name}).sort("price", 1)
+        result_list = []
+        for result in results:
+            result['_id'] = str(result['_id'])  # Convert ObjectId to string
+            result_list.append(result)
     
-        return jsonify(result)
+        return jsonify(result_list)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     # END CODE HERE
@@ -38,10 +40,11 @@ def add_product():
     # BEGIN CODE HERE
     try:
         data = request.get_json()
-        # Validate data
+        
         if not all(k in data for k in ("id", "name", "production_year", "price", "color", "size")):
             return jsonify({"error": "Invalid input"}), 400
 
+        # Check if color and size are in the required range
         if data['color'] not in [1, 2, 3] or data['size'] not in [1, 2, 3, 4]:
             return jsonify({"error": "Invalid color or size"}), 400
         

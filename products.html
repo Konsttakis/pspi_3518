@@ -25,12 +25,15 @@
 
   <div class="frame-4">
     <label for="search">Search a product: </label>
-    <input type="text" id="search" name="search">
-    <button>Search</button>
+    <form id="search-form">
+      <input type="text" id="search" name="search">
+      <button id="search-button">Search</button>
+    </form>
+
 
     <div class="results">
       <label for="search">Results: </label>
-      <table>
+      <table id="search-results">
         <tr>
           <th>ID</th>
           <th>Name</th>
